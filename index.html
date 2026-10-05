@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Orientación Vocacional</title>
+  <!-- Cargamos la librería para generar PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f6f9;
+      color: #333;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    h1, h2, h3 {
+      color: #1a365d;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 5px;
+    }
+    input[type="text"], select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    .question {
+      background: #edf2f7;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+    }
+    button {
+      background-color: #2b6cb0;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    button:hover {
+      background-color: #2c5282;
+    }
+    .hidden {
+      display: none;
+    }
+    /* Estilos del reporte PDF */
+    #reporte-pdf {
+      padding: 20px;
+      background: white;
+      border: 1px solid #e2e8f0;
+    }
+    .card-carrera {
+      border-left: 4px solid #3182ce;
+      background-color: #f7fafc;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  
+  <!-- PASO 1: Formulario de Datos e Intereses -->
+  <div id="paso-registro">
+    <h1>Test de Orientación Vocacional</h1>
+    <p>Ingresa tus datos e intereses iniciales para comenzar.</p>
+    
+    <div class="form-group">
+      <label for="nombre">Nombre completo:</label>
+      <input type="text" id="nombre" placeholder="Ej. Maria Lopez">
+    </div>
+
+    <div class="form-group">
+      <label for="intereses">Menciona 2 o 3 carreras que te interesen actualmente:</label>
+      <input type="text" id="intereses" placeholder="Ej. Diseño Gráfico, Programación, Medicina">
+    </div>
+
+    <button onclick="comenzarTest()">Comenzar Test</button>
+  </div>
+
+  <!-- PASO 2: Preguntas del Test -->
+  <div id="paso-test" class="hidden">
+    <h2>Cuestionario de Intereses</h2>
+    <form id="form-test">
+      
+      <div class="question">
+        <p>1. ¿Te atrae diseñar páginas web, interfaces digitales o material gráfico visual?</p>
+        <select name="q1" required>
+          <option value="">Selecciona una opción</option>
+          <option value="tec">Mucho</option>
+          <option value="soc">Poco / Nada</option>
+        </select>
+      </div>
+
+      <div class="question">
+        <p>2. ¿Disfrutas resolver problemas lógicos, programar o armar/reparar equipos de cómputo?</p>
+        <select name="q2" required>
+          <option value="">Selecciona una opción</option>
+          <option value="tec">Mucho</option>
+          <option value="soc">Poco / Nada</option>
+        </select>
+      </div>
+
+      <div class="question">
+        <p>3. ¿Te llama la atención la enseñanza, el servicio comunitario o la atención a las personas?</p>
+        <select name="q3" required>
+          <option value="">Selecciona una opción</option>
+          <option value="soc">Mucho</option>
+          <option value="tec">Poco / Nada</option>
+        </select>
+      </div>
+
+      <button type="button" onclick="procesarResultados()">Ver Resultados y Generar Reporte</button>
+    </form>
+  </div>
+
+  <!-- PASO 3: Vista Previa del Reporte y Descarga -->
+  <div id="paso-resultado" class="hidden">
+    
+    <!-- Este contenedor es el que se convierte a PDF -->
+    <div id="reporte-pdf">
+      <h2 style="text-align: center; color: #2b6cb0;">Informe de Orientación Vocacional</h2>
+      <hr>
+      <p><strong>Estudiante:</strong> <span id="res-nombre"></span></p>
+      <p><strong>Carreras de Interés Declaradas:</strong> <span id="res-intereses"></span></p>
+      
+      <h3>1. Resultado del Test (Perfil Predominante)</h3>
+      <p id="res-perfil-general"></p>
+
+      <h3>2. Opciones de Carreras Recomendadas y Fichas Técológicas</h3>
+      <div id="res-carreras-container"></div>
+    </div>
+
+    <br>
+    <button onclick="descargarPDF()">Descargar Documento (PDF)</button>
+    <button onclick="location.reload()" style="background-color: #718096;">Reiniciar</button>
+  </div>
+
+</div>
+
+<script>
+  // Catálogo de carreras y perfiles (Simulación de Base de Datos en JavaScript)
+  const catalogoCarreras = {
+    tec: [
+      {
+        nombre: "Ingeniería en Desarrollo de Software / Sistemas Computacionales",
+        perfil: "Habilidad para el pensamiento lógico, resolución de problemas algorítmicos, diseño de sistemas y código estructurado.",
+        campoAccion: "Desarrollo web y móvil, análisis de datos, ciberseguridad, administración de bases de datos y tecnología educativa."
+      },
+      {
+        nombre: "Diseño y Comunicación Digital",
+        perfil: "Creatividad visual, capacidad analítica para la comunicación interactiva y dominio de herramientas digitales.",
+        campoAccion: "Agencias de publicidad, desarrollo de experiencia de usuario (UX/UI), edición digital e identidad visual."
+      }
+    ],
+    soc: [
+      {
+        nombre: "Pedagogía y Ciencias de la Educación",
+        perfil: "Capacidad de escucha activa, vocación de servicio, diseño instruccional y facilidad para la formación de personas.",
+        campoAccion: "Instituciones educativas públicas y privadas, capacitación empresarial, desarrollo de materiales didácticos."
+      },
+      {
+        nombre: "Psicología y Orientación Humana",
+        perfil: "Empatía, análisis del comportamiento, ética profesional y habilidades interpersonales.",
+        campoAccion: "Centros de salud, orientación escolar, gestión de recursos humanos y consultoría independiente."
+      }
+    ]
+  };
+
+  let datosUsuario = {};
+
+  function comenzarTest() {
+    const nombre = document.getElementById('nombre').value.trim();
+    const intereses = document.getElementById('intereses').value.trim();
+
+    if (!nombre || !intereses) {
+      alert("Por favor completa tus datos antes de continuar.");
+      return;
+    }
+
+    datosUsuario.nombre = nombre;
+    datosUsuario.intereses = intereses;
+
+    document.getElementById('paso-registro').classList.add('hidden');
+    document.getElementById('paso-test').classList.remove('hidden');
+  }
+
+  function procesarResultados() {
+    const q1 = document.querySelector('select[name="q1"]').value;
+    const q2 = document.querySelector('select[name="q2"]').value;
+    const q3 = document.querySelector('select[name="q3"]').value;
+
+    if (!q1 || !q2 || !q3) {
+      alert("Por favor responde todas las preguntas del test.");
+      return;
+    }
+
+    // Conteo de puntos por categoría
+    let conteo = { tec: 0, soc: 0 };
+    if (q1 === 'tec') conteo.tec++;
+    if (q2 === 'tec') conteo.tec++;
+    if (q3 === 'soc') conteo.soc++;
+
+    // Determinar categoría ganadora
+    let categoriaDominante = conteo.tec >= conteo.soc ? 'tec' : 'soc';
+
+    // Guardar en almacenamiento local del navegador (Simulación de guardar en BD)
+    localStorage.setItem('ultimoResultado', JSON.stringify({
+      usuario: datosUsuario,
+      conteo: conteo,
+      categoria: categoriaDominante
+    }));
+
+    mostrarReporte(categoriaDominante);
+  }
+
+  function mostrarReporte(categoria) {
+    document.getElementById('paso-test').classList.add('hidden');
+    document.getElementById('paso-resultado').classList.remove('hidden');
+
+    document.getElementById('res-nombre').innerText = datosUsuario.nombre;
+    document.getElementById('res-intereses').innerText = datosUsuario.intereses;
+
+    const perfilTexto = categoria === 'tec' 
+      ? "Tu perfil muestra una alta inclinación hacia el área Técnica y Digital (Tecnología, Sistemas y Creatividad Digital)."
+      : "Tu perfil muestra una alta inclinación hacia el área Social y Educativa (Trabajo con personas, formación y servicio).";
+
+    document.getElementById('res-perfil-general').innerText = perfilTexto;
+
+    // Cargar carreras asociadas desde el catálogo
+    const contenedor = document.getElementById('res-carreras-container');
+    contenedor.innerHTML = "";
+
+    catalogoCarreras[categoria].forEach(carrera => {
+      const htmlCard = `
+        <div class="card-carrera">
+          <h4 style="margin:0 0 8px 0; color:#2c5282;">${carrera.nombre}</h4>
+          <p><strong>Perfil Profesional:</strong> ${carrera.perfil}</p>
+          <p><strong>Campos de Acción:</strong> ${carrera.campoAccion}</p>
+        </div>
+      `;
+      contenedor.innerHTML += htmlCard;
+    });
+  }
+
+  function descargarPDF() {
+    const elemento = document.getElementById('reporte-pdf');
+    const opciones = {
+      margin:       10,
+      filename:     `Resultado_Test_${datosUsuario.nombre.replace(/\s+/g, '_')}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opciones).from(elemento).save();
+  }
+</script>
+
+</body>
+</html>
